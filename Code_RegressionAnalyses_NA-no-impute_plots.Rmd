@@ -1,0 +1,262 @@
+---
+title: "PsychoOncology_Rev1_plots"
+output:
+  html_notebook: default
+  pdf_document: default
+  word_document: default
+always_allow_html: yes
+---
+```{r include = FALSE}
+
+rm(list = ls())
+knitr::opts_chunk$set(echo=FALSE)
+
+library(knitr)
+library(corrplot)
+library(ggplot2)
+library(viridisLite)
+library(car)
+#library(jtools)
+library(lsr)
+library(plotly)
+library(broom)
+#library(apaTables)
+library(processx)
+
+setwd("/home/hannelore/Documents/ANALYSES/ER_QoL/")
+results_v1=read.csv(file="output_Rev1_v1.csv", header=TRUE, sep=";")
+results_v2=read.csv(file="output_Rev1_v2.csv", header=TRUE, sep=";")
+
+```
+
+PRE-OPERATIVE ER-AFF: --> no longer significant when also including loneliness in MANOVA for aff func!
+```{r}
+idxvis=!is.na(results_v2$ERQ_EX_norm_t1)
+results_sub <- data.frame(results_v2$group[idxvis],results_v2$PSWQ_norm_t1[idxvis],results_v2$ERQ_EX_norm_t1[idxvis])  
+colnames(results_sub)<-c('group', 'PSWQ_norm_t1', 'ERQ_EX_norm_t1')
+
+dv='PSWQ_norm_t1'
+iv='ERQ_EX_norm_t1'
+
+names(results_sub) <- sub(dv, 'dv', names(results_sub))
+names(results_sub) <- sub(iv, 'iv', names(results_sub))
+
+m <- lm(dv ~ iv, data = results_sub)
+
+plot <-plot_ly(data= results_sub[results_sub$group == 'CON',], x=~iv , name = 'Caregivers',
+               color=I("blue"))%>%
+  add_markers(y = ~dv) %>%
+  add_trace(data = results_sub[results_sub$group == 'MEN',],x=~iv,y=~dv, type = 'scatter',mode = 'markers',
+            color=I("cyan3"), name = 'Meningioma patients')%>%
+  add_trace(data = results_sub[results_sub$group == 'GLI',],x=~iv,y=~dv, type = 'scatter',mode = 'markers',
+            color=I("magenta"), name = 'Glioma patients')%>%
+  add_lines(y = fitted(m), data = results_sub, x=~iv,name = 'Regression line', showlegend = FALSE,
+            line = list(color = 'rgba(100, 100, 100, 1)')) %>%
+  add_ribbons(data =augment(m),
+              ymin = ~.fitted - 1.96 * .se.fit,
+              ymax = ~.fitted + 1.96 * .se.fit,
+              line = list(color = 'rgba(120, 120, 120, 0.2)'),
+              fillcolor = 'rgba(120,120,120, 0.3)',
+              name = "95% confidence interval", showlegend = FALSE) %>%
+  layout(xaxis = list(title = 'Expression before surgery', titlefont=list(size=16),
+                      zeroline=FALSE),
+         yaxis = list(title = 'Worry before surgery', titlefont=list(size=16),
+                      zeroline=FALSE),
+         legend = list(x=0.15, y=1.1, orientation='h', font=list(size=16)))
+
+plot
+rm(list=c('plot','results_sub','idxvis','dv','iv','m'))
+```
+
+
+POST-OPERATIVE ER-COG:
+```{r}
+#SU-SOC
+idxvis=!is.na(results_v1$ERQ_SU_norm_t2)
+results_sub <- data.frame(results_v1$group[idxvis],results_v1$SOC_resnorm_t2[idxvis],results_v1$ERQ_SU_norm_t2[idxvis])  
+colnames(results_sub)<-c('group', 'SOC_resnorm_t2', 'ERQ_SU_norm_t2')
+
+dv='SOC_resnorm_t2'
+iv='ERQ_SU_norm_t2'
+
+names(results_sub) <- sub(dv, 'dv', names(results_sub))
+names(results_sub) <- sub(iv, 'iv', names(results_sub))
+
+m <- lm(dv ~ iv, data = results_sub)
+
+plot1 <-plot_ly(data= results_sub[results_sub$group == 'CON',], x=~iv , name = 'Caregivers',
+               color=I("blue"), showlegend=FALSE)%>%
+  add_markers(y = ~dv) %>%
+  add_trace(data = results_sub[results_sub$group == 'MEN',],x=~iv,y=~dv, type = 'scatter',mode = 'markers',
+            color=I("cyan3"), name = 'Meningioma patients')%>%
+  add_trace(data = results_sub[results_sub$group == 'GLI',],x=~iv,y=~dv, type = 'scatter',mode = 'markers',
+            color=I("magenta"), name = 'Glioma patients')%>%
+  add_lines(y = fitted(m), data = results_sub, x=~iv,name = 'Regression line', showlegend = FALSE,
+            line = list(color = 'rgba(100, 100, 100, 1)')) %>%
+  add_ribbons(data =augment(m),
+              ymin = ~.fitted - 1.96 * .se.fit,
+              ymax = ~.fitted + 1.96 * .se.fit,
+              line = list(color = 'rgba(120, 120, 120, 0.2)'),
+              fillcolor = 'rgba(120,120,120, 0.3)',
+              name = "95% confidence interval", showlegend = FALSE) %>%
+  layout(xaxis = list(title = 'Suppression after surgery', titlefont=list(size=16),
+                      zeroline=FALSE),
+         yaxis = list(title = 'Planning accuracy after surgery', titlefont=list(size=16),
+                      zeroline=FALSE))
+
+#EX-SOC
+idxvis=!is.na(results_v1$ERQ_EX_norm_t2)
+results_sub <- data.frame(results_v1$group[idxvis],results_v1$SOC_resnorm_t2[idxvis],results_v1$ERQ_EX_norm_t2[idxvis])  
+colnames(results_sub)<-c('group', 'SOC_resnorm_t2', 'ERQ_EX_norm_t2')
+
+dv='SOC_resnorm_t2'
+iv='ERQ_EX_norm_t2'
+
+names(results_sub) <- sub(dv, 'dv', names(results_sub))
+names(results_sub) <- sub(iv, 'iv', names(results_sub))
+
+m <- lm(dv ~ iv, data = results_sub)
+
+plot2 <-plot_ly(data= results_sub[results_sub$group == 'CON',], x=~iv , name = 'Caregivers',
+               color=I("blue"), showlegend=TRUE)%>%
+  add_markers(y = ~dv) %>%
+  add_trace(data = results_sub[results_sub$group == 'MEN',],x=~iv,y=~dv, type = 'scatter',mode = 'markers',
+            color=I("cyan3"), name = 'Meningioma patients')%>%
+  add_trace(data = results_sub[results_sub$group == 'GLI',],x=~iv,y=~dv, type = 'scatter',mode = 'markers',
+            color=I("magenta"), name = 'Glioma patients')%>%
+  add_lines(y = fitted(m), data = results_sub, x=~iv,name = 'Regression line', showlegend = FALSE,
+            line = list(color = 'rgba(100, 100, 100, 1)')) %>%
+  add_ribbons(data =augment(m),
+              ymin = ~.fitted - 1.96 * .se.fit,
+              ymax = ~.fitted + 1.96 * .se.fit,
+              line = list(color = 'rgba(120, 120, 120, 0.2)'),
+              fillcolor = 'rgba(120,120,120, 0.3)',
+              name = "95% confidence interval", showlegend = FALSE) %>%
+  layout(xaxis = list(title = 'Expression after surgery', titlefont=list(size=16),
+                      zeroline=FALSE),
+         yaxis = list(title = 'Planning accuracy after surgery', titlefont=list(size=16),
+                      zeroline=FALSE),
+         legend = list(x=0.15, y=1.1, orientation='h', font=list(size=16)))
+
+p <- subplot(plot1,plot2,shareY=TRUE,titleX=TRUE)
+p
+rm(list=c('plot1','plot2','p','results_sub','idxvis','dv','iv','m'))
+```
+
+
+
+POST-OPERATIVE ER-AFF (part1):
+```{r}
+#RE-PSWQ
+idxvis=!is.na(results_v1$ERQ_RE_norm_t2)
+results_sub <- data.frame(results_v1$group[idxvis],results_v1$PSWQ_norm_t2[idxvis],results_v1$ERQ_RE_norm_t2[idxvis])  
+colnames(results_sub)<-c('group', 'PSWQ_norm_t2', 'ERQ_RE_norm_t2')
+
+dv='PSWQ_norm_t2'
+iv='ERQ_RE_norm_t2'
+
+names(results_sub) <- sub(dv, 'dv', names(results_sub))
+names(results_sub) <- sub(iv, 'iv', names(results_sub))
+
+m <- lm(dv ~ iv, data = results_sub)
+
+plot1 <-plot_ly(data= results_sub[results_sub$group == 'CON',], x=~iv , name = 'Caregivers',
+               color=I("blue"), showlegend=FALSE)%>%
+  add_markers(y = ~dv) %>%
+  add_trace(data = results_sub[results_sub$group == 'MEN',],x=~iv,y=~dv, type = 'scatter',mode = 'markers',
+            color=I("cyan3"), name = 'Meningioma patients')%>%
+  add_trace(data = results_sub[results_sub$group == 'GLI',],x=~iv,y=~dv, type = 'scatter',mode = 'markers',
+            color=I("magenta"), name = 'Glioma patients')%>%
+  add_lines(y = fitted(m), data = results_sub, x=~iv,name = 'Regression line', showlegend = FALSE,
+            line = list(color = 'rgba(100, 100, 100, 1)')) %>%
+  add_ribbons(data =augment(m),
+              ymin = ~.fitted - 1.96 * .se.fit,
+              ymax = ~.fitted + 1.96 * .se.fit,
+              line = list(color = 'rgba(120, 120, 120, 0.2)'),
+              fillcolor = 'rgba(120,120,120, 0.3)',
+              name = "95% confidence interval", showlegend = FALSE) %>%
+  layout(xaxis = list(title = 'Reappraisal after surgery', titlefont=list(size=16),
+                      zeroline=FALSE),
+         yaxis = list(title = 'Worry after surgery', titlefont=list(size=16),
+                      zeroline=FALSE))
+
+#EX-PSWQ
+idxvis=!is.na(results_v1$ERQ_EX_norm_t2)
+results_sub <- data.frame(results_v1$group[idxvis],results_v1$PSWQ_norm_t2[idxvis],results_v1$ERQ_EX_norm_t2[idxvis])  
+colnames(results_sub)<-c('group', 'PSWQ_norm_t2', 'ERQ_EX_norm_t2')
+
+dv='PSWQ_norm_t2'
+iv='ERQ_EX_norm_t2'
+
+names(results_sub) <- sub(dv, 'dv', names(results_sub))
+names(results_sub) <- sub(iv, 'iv', names(results_sub))
+
+m <- lm(dv ~ iv, data = results_sub)
+
+plot2 <-plot_ly(data= results_sub[results_sub$group == 'CON',], x=~iv , name = 'Caregivers',
+               color=I("blue"), showlegend=FALSE)%>%
+  add_markers(y = ~dv) %>%
+  add_trace(data = results_sub[results_sub$group == 'MEN',],x=~iv,y=~dv, type = 'scatter',mode = 'markers',
+            color=I("cyan3"), name = 'Meningioma patients')%>%
+  add_trace(data = results_sub[results_sub$group == 'GLI',],x=~iv,y=~dv, type = 'scatter',mode = 'markers',
+            color=I("magenta"), name = 'Glioma patients')%>%
+  add_lines(y = fitted(m), data = results_sub, x=~iv,name = 'Regression line', showlegend = FALSE,
+            line = list(color = 'rgba(100, 100, 100, 1)')) %>%
+  add_ribbons(data =augment(m),
+              ymin = ~.fitted - 1.96 * .se.fit,
+              ymax = ~.fitted + 1.96 * .se.fit,
+              line = list(color = 'rgba(120, 120, 120, 0.2)'),
+              fillcolor = 'rgba(120,120,120, 0.3)',
+              name = "95% confidence interval", showlegend = FALSE) %>%
+  layout(xaxis = list(title = 'Expression after surgery', titlefont=list(size=16),
+                      zeroline=FALSE),
+         yaxis = list(title = 'Worry after surgery', titlefont=list(size=16),
+                      zeroline=FALSE),
+         legend = list(x=0.22, y=1.1, orientation='h', font=list(size=16)))
+
+p <- subplot(plot1,plot2,shareY=TRUE,titleX=TRUE)
+p
+rm(list=c('plot1','plot2','p','results_sub','idxvis','dv','iv','m'))
+```
+
+
+
+POST-OPERATIVE ER-AFF (part2):
+```{r}
+#RE-STAI
+idxvis=!is.na(results_v1$ERQ_RE_norm_t2)
+results_sub <- data.frame(results_v1$group[idxvis],results_v1$STAI_norm_t2[idxvis],results_v1$ERQ_RE_norm_t2[idxvis])  
+colnames(results_sub)<-c('group', 'STAI_norm_t2', 'ERQ_RE_norm_t2')
+
+dv='STAI_norm_t2'
+iv='ERQ_RE_norm_t2'
+
+names(results_sub) <- sub(dv, 'dv', names(results_sub))
+names(results_sub) <- sub(iv, 'iv', names(results_sub))
+
+m <- lm(dv ~ iv, data = results_sub)
+
+plot <-plot_ly(data= results_sub[results_sub$group == 'CON',], x=~iv , name = 'Caregivers',
+               color=I("blue"), showlegend=FALSE)%>%
+  add_markers(y = ~dv) %>%
+  add_trace(data = results_sub[results_sub$group == 'MEN',],x=~iv,y=~dv, type = 'scatter',mode = 'markers',
+            color=I("cyan3"), name = 'Meningioma patients')%>%
+  add_trace(data = results_sub[results_sub$group == 'GLI',],x=~iv,y=~dv, type = 'scatter',mode = 'markers',
+            color=I("magenta"), name = 'Glioma patients')%>%
+  add_lines(y = fitted(m), data = results_sub, x=~iv,name = 'Regression line', showlegend = FALSE,
+            line = list(color = 'rgba(100, 100, 100, 1)')) %>%
+  add_ribbons(data =augment(m),
+              ymin = ~.fitted - 1.96 * .se.fit,
+              ymax = ~.fitted + 1.96 * .se.fit,
+              line = list(color = 'rgba(120, 120, 120, 0.2)'),
+              fillcolor = 'rgba(120,120,120, 0.3)',
+              name = "95% confidence interval", showlegend = FALSE) %>%
+  layout(xaxis = list(title = 'Reappraisal after surgery', titlefont=list(size=16),
+                      zeroline=FALSE),
+         yaxis = list(title = 'State anxiety after surgery', titlefont=list(size=16),
+                      zeroline=FALSE),
+         legend = list(font=list(size=16)))
+p <- subplot(plot,plot,shareY=TRUE,titleX=TRUE)
+p
+rm(list=c('plot','results_sub','idxvis','dv','iv','m'))
+```
